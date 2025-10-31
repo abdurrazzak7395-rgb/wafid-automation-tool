@@ -1,5 +1,7 @@
 import time
 import random
+import json
+import os
 from typing import Dict, List, Optional, Any, Callable
 from .logger import logger
 from .proxy_manager import ProxyManager
@@ -10,15 +12,18 @@ from .form_handler import FormHandler
 class AutomationEngine:
     """Main automation engine with matching logic and retry mechanism"""
     
-    def __init__(self):
+    def __init__(self, config_file: str = "config.json"):
         self.proxy_manager = ProxyManager()
         self.browser = BrowserAutomation()
         self.form_handler = FormHandler(self.browser)
         
+        # Load configuration
+        self.config = self._load_config(config_file)
+        
         # Configuration
         self.target_medical_center = ""
-        self.booking_url = "https://wafid.com/book-appointment"
-        self.max_retries = 100  # Maximum retry attempts
+        self.booking_url = self.config.get('automation', {}).get('booking_url', 'https://wafid.com/book-appointment')
+        self.max_retries = self.config.get('automation', {}).get('max_retries', 100)
         self.retry_count = 0
         
         # State
@@ -33,6 +38,71 @@ class AutomationEngine:
             'proxies_used': 0,
             'total_time': 0
         }
+    
+    def _load_config(self, config_file: str) -> Dict:
+        """Load configuration from JSON file"""
+        try:
+            # Try to load from project root
+            if os.path.exists(config_file):
+                with open(config_file, 'r') as f:
+                    config = json.load(f)
+                    logger.info(f"Configuration loaded from {config_file}")
+                    return config
+            
+            # Try to load from parent directory
+            parent_config = os.path.join('..', config_file)
+            if os.path.exists(parent_config):
+                with open(parent_config, 'r') as f:
+                    config = json.load(f)
+                    logger.info(f"Configuration loaded from {parent_config}")
+                    return config
+            
+            logger.warning(f"Config file {config_file} not found, using defaults")
+            return {}
+            
+        except Exception as e:
+            logger.error(f"Failed to load config: {e}, using defaults")
+            return {}
+    
+    def set_booking_url(self, url: str):
+        """Set the booking URL with validation"""
+        if not url:
+            logger.error("Booking URL cannot be empty")
+            return False
+        
+        # Strip whitespace
+        url = url.strip()
+        
+        # Basic URL validation
+        if not url.startswith(('http://', 'https://')):
+            logger.error("Booking URL must start with http:// or https://")
+            return False
+        
+        # Check for common URL issues
+        if ' ' in url:
+            logger.error("Booking URL cannot contain spaces")
+            return False
+        
+        # Validate URL structure
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(url)
+            
+            if not parsed.netloc:
+                logger.error("Invalid URL: missing domain")
+                return False
+            
+            if not parsed.scheme in ['http', 'https']:
+                logger.error("Invalid URL: scheme must be http or https")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Invalid URL format: {e}")
+            return False
+        
+        self.booking_url = url
+        logger.info(f"Booking URL set to: {url}")
+        return True
     
     def set_target_medical_center(self, center_name: str):
         """Set the target medical center to match"""

@@ -51,12 +51,30 @@ python src/main.py
 
 ## Usage
 
-1. Launch the GUI application
-2. Set your target medical center name
-3. Load candidate data from CSV
-4. Start automation
-5. Monitor real-time logs
-6. Export captured payment URLs
+### GUI Mode
+
+1. Launch the GUI application: `python main.py`
+2. **Configure booking URL** (if different from default)
+3. Set your target medical center name
+4. Load candidate data from CSV
+5. Start automation
+6. Monitor real-time logs
+7. Export captured payment URLs
+
+### CLI Mode
+
+```bash
+python main.py --url "https://your-booking-site.com" --target "Medical Center" --csv data.csv
+```
+
+### Configuration
+
+The booking URL can be configured in three ways:
+1. **config.json** (recommended) - Edit the `booking_url` field
+2. **Command line** - Use `--url` parameter
+3. **GUI** - Update URL in the Configuration tab
+
+See [URL_CONFIGURATION.md](URL_CONFIGURATION.md) for detailed instructions.
 
 ## Important Notes
 

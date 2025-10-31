@@ -60,6 +60,12 @@ For more information, see README.md
     )
     
     parser.add_argument(
+        "--url",
+        type=str,
+        help="Booking URL (overrides config.json)"
+    )
+    
+    parser.add_argument(
         "--max-retries",
         type=int,
         default=100,
@@ -105,6 +111,9 @@ For more information, see README.md
                 app.csv_file_path = args.csv
                 app.csv_path_var.set(args.csv)
             
+            if args.url:
+                app.automation_engine.set_booking_url(args.url)
+            
             app.run()
     
     except KeyboardInterrupt:
@@ -128,6 +137,12 @@ def run_cli_automation(args):
     
     # Configure browser headless mode
     engine.browser.headless = args.headless
+    
+    # Set booking URL if provided
+    if args.url:
+        if not engine.set_booking_url(args.url):
+            logger.error("Invalid booking URL provided")
+            sys.exit(1)
     
     # Set target medical center
     engine.set_target_medical_center(args.target)

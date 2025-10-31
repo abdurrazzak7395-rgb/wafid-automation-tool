@@ -89,6 +89,21 @@ class WafidAutomationGUI:
     
     def create_config_tab(self):
         """Create configuration tab"""
+        # Booking URL
+        url_frame = ttk.LabelFrame(self.config_frame, text="Booking URL", padding=10)
+        url_frame.pack(fill='x', padx=10, pady=5)
+        
+        ttk.Label(url_frame, text="Booking Page URL:").pack(anchor='w')
+        self.url_entry = ttk.Entry(url_frame, width=50)
+        self.url_entry.insert(0, self.automation_engine.booking_url)
+        self.url_entry.pack(fill='x', pady=(5, 0))
+        
+        ttk.Button(
+            url_frame, 
+            text="Update URL",
+            command=self.update_booking_url
+        ).pack(pady=(10, 0))
+        
         # Target Medical Center
         center_frame = ttk.LabelFrame(self.config_frame, text="Target Medical Center", padding=10)
         center_frame.pack(fill='x', padx=10, pady=5)
@@ -299,6 +314,19 @@ class WafidAutomationGUI:
         
         self.root.after(0, update)
     
+    def update_booking_url(self):
+        """Update booking URL"""
+        url = self.url_entry.get().strip()
+        if not url:
+            messagebox.showerror("Error", "Please enter a booking URL")
+            return
+        
+        if self.automation_engine.set_booking_url(url):
+            messagebox.showinfo("Success", f"Booking URL updated: {url}")
+            self.update_status_display()
+        else:
+            messagebox.showerror("Error", "Invalid URL. Must start with http:// or https://")
+    
     def set_target_center(self):
         """Set target medical center"""
         center_name = self.center_entry.get().strip()
@@ -435,7 +463,8 @@ class WafidAutomationGUI:
         try:
             stats = self.automation_engine.get_statistics()
             
-            status_text = f"Target Medical Center: {self.target_center or 'Not set'}\n"
+            status_text = f"Booking URL: {self.automation_engine.booking_url}\n"
+            status_text += f"Target Medical Center: {self.target_center or 'Not set'}\n"
             status_text += f"CSV File: {os.path.basename(self.csv_file_path) if self.csv_file_path else 'Not loaded'}\n"
             status_text += f"Candidate: {stats.get('candidate_summary', 'None')}\n"
             status_text += f"Automation Status: {'Running' if self.is_automation_running else 'Stopped'}\n"
