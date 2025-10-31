@@ -280,30 +280,33 @@ class ProxyManager:
                 return
             
             logger.info(f"Need more proxies. Current: {current_count}, Required: {min_working_proxies}")
-            
-            # Fetch new proxies
-            new_proxies = self.fetch_proxies_from_sources()
-            
-            if not new_proxies:
-                logger.warning("No new proxies fetched from sources")
-                return
-            
-            # Filter out already known working proxies
+        
+        # Fetch new proxies (outside lock to avoid blocking)
+        new_proxies = self.fetch_proxies_from_sources()
+        
+        if not new_proxies:
+            logger.warning("No new proxies fetched from sources")
+            return
+        
+        # Filter out already known working proxies
+        with self.lock:
             existing_proxy_ips = {p['proxy'] for p in self.working_proxies}
-            new_proxies = [p for p in new_proxies if p not in existing_proxy_ips]
-            
-            if not new_proxies:
-                logger.info("All fetched proxies are already in working list")
-                return
-            
-            # LIMIT TO FIRST 50 PROXIES FOR FAST TESTING
-            new_proxies = new_proxies[:50]
-            logger.info(f"Testing first {len(new_proxies)} proxies for quick automation start...")
-            
-            # Test new proxies
-            tested_proxies = self.test_proxies_batch(new_proxies, max_workers=20)
-            
-            # Add working proxies to list
+        
+        new_proxies = [p for p in new_proxies if p not in existing_proxy_ips]
+        
+        if not new_proxies:
+            logger.info("All fetched proxies are already in working list")
+            return
+        
+        # LIMIT TO FIRST 50 PROXIES FOR FAST TESTING
+        new_proxies = new_proxies[:50]
+        logger.info(f"Testing first {len(new_proxies)} proxies for quick automation start...")
+        
+        # Test new proxies (outside lock to avoid blocking)
+        tested_proxies = self.test_proxies_batch(new_proxies, max_workers=20)
+        
+        # Add working proxies to list (with lock)
+        with self.lock:
             self.working_proxies.extend(tested_proxies)
             
             # Sort by response time (fastest first)

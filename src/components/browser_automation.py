@@ -24,6 +24,14 @@ class BrowserAutomation:
         self.network_monitor = None
         self.detected_fields = {}
         self.user_agent = UserAgent()
+        self.temp_dir = None  # Track temp directory for cleanup
+    
+    def __del__(self):
+        """Destructor to ensure cleanup"""
+        try:
+            self.close_session()
+        except Exception:
+            pass
         
     def create_fresh_session(self, proxy: Optional[str] = None) -> bool:
         """Create a completely fresh browser session"""
@@ -87,8 +95,8 @@ class BrowserAutomation:
             # Data directory (fresh temp directory with timestamp)
             import tempfile
             import time
-            temp_dir = tempfile.mkdtemp(prefix=f'chrome_session_{int(time.time())}_')
-            chrome_options.add_argument(f'--user-data-dir={temp_dir}')
+            self.temp_dir = tempfile.mkdtemp(prefix=f'chrome_session_{int(time.time())}_')
+            chrome_options.add_argument(f'--user-data-dir={self.temp_dir}')
             
             # Additional prefs for fresh session
             prefs = {
@@ -133,15 +141,29 @@ class BrowserAutomation:
         try:
             if self.driver:
                 # Clear all data before closing
-                self.driver.execute_script("window.localStorage.clear();")
-                self.driver.execute_script("window.sessionStorage.clear();")
-                self.driver.delete_all_cookies()
+                try:
+                    self.driver.execute_script("window.localStorage.clear();")
+                    self.driver.execute_script("window.sessionStorage.clear();")
+                    self.driver.delete_all_cookies()
+                except Exception:
+                    pass  # Ignore errors if browser already closed
                 
                 # Close browser
                 self.driver.quit()
                 self.driver = None
                 
                 logger.debug("Browser session closed and cleaned up")
+            
+            # Clean up temporary directory
+            if self.temp_dir:
+                try:
+                    import shutil
+                    shutil.rmtree(self.temp_dir, ignore_errors=True)
+                    logger.debug(f"Cleaned up temporary directory: {self.temp_dir}")
+                    self.temp_dir = None
+                except Exception as e:
+                    logger.warning(f"Failed to clean up temp directory: {e}")
+                    
         except Exception as e:
             logger.warning(f"Error closing browser session: {e}")
     

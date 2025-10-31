@@ -92,6 +92,12 @@ class AutomationEngine:
         """Stop the automation process"""
         self.is_running = False
         logger.automation_stopped()
+        
+        # Ensure browser is closed
+        try:
+            self.browser.close_session()
+        except Exception as e:
+            logger.debug(f"Error closing browser during stop: {e}")
     
     def _automation_loop(self) -> bool:
         """Main automation loop with retry mechanism"""

@@ -21,6 +21,10 @@ class NetworkMonitor:
     def _enable_network_logging(self):
         """Enable network logging in Chrome DevTools"""
         try:
+            if not self.driver:
+                logger.warning("Driver not initialized, cannot enable network monitoring")
+                return
+            
             # Enable Network domain
             self.driver.execute_cdp_cmd('Network.enable', {})
             
@@ -84,37 +88,46 @@ class NetworkMonitor:
                 logs = self.get_network_logs()
                 
                 for log in logs:
-                    method = log['message']['method']
-                    
-                    if method == 'Network.responseReceived':
-                        response = log['message']['params']['response']
-                        url = response['url']
-                        status = response['status']
+                    try:
+                        method = log.get('message', {}).get('method', '')
                         
-                        # Try to get response body
-                        try:
-                            request_id = log['message']['params']['requestId']
-                            response_body = self.driver.execute_cdp_cmd(
-                                'Network.getResponseBody', 
-                                {'requestId': request_id}
-                            )
+                        if method == 'Network.responseReceived':
+                            response = log.get('message', {}).get('params', {}).get('response', {})
+                            url = response.get('url', '')
+                            status = response.get('status', 0)
                             
-                            if response_body.get('body'):
-                                try:
-                                    # Try to parse as JSON
-                                    response_data = json.loads(response_body['body'])
-                                except:
-                                    # If not JSON, store as text
-                                    response_data = {'body': response_body['body']}
+                            # Try to get response body
+                            try:
+                                request_id = log.get('message', {}).get('params', {}).get('requestId')
+                                if not request_id:
+                                    continue
                                 
-                                self.capture_response(url, status, response_data)
+                                response_body = self.driver.execute_cdp_cmd(
+                                    'Network.getResponseBody', 
+                                    {'requestId': request_id}
+                                )
                                 
-                                # Check if this response contains medical center assignment
-                                if self._contains_medical_center_assignment(response_data):
-                                    return response_data
-                        
-                        except Exception as e:
-                            logger.debug(f"Could not get response body: {e}")
+                                if response_body and response_body.get('body'):
+                                    try:
+                                        # Try to parse as JSON
+                                        response_data = json.loads(response_body['body'])
+                                    except (json.JSONDecodeError, ValueError):
+                                        # If not JSON, store as text
+                                        response_data = {'body': response_body['body']}
+                                    
+                                    self.capture_response(url, status, response_data)
+                                    
+                                    # Check if this response contains medical center assignment
+                                    if self._contains_medical_center_assignment(response_data):
+                                        return response_data
+                            
+                            except Exception as e:
+                                logger.debug(f"Could not get response body for {url}: {e}")
+                                continue
+                    
+                    except Exception as e:
+                        logger.debug(f"Error processing log entry: {e}")
+                        continue
                 
                 time.sleep(0.5)  # Short delay before checking again
                 

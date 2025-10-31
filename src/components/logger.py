@@ -63,9 +63,12 @@ class AutomationLogger:
         """Send log message to GUI console if callback is set"""
         if self.gui_console_callback:
             try:
-                self.gui_console_callback(message)
+                # Call GUI callback without holding the lock to prevent deadlocks
+                callback = self.gui_console_callback
+                callback(message)
             except Exception as e:
-                print(f"GUI callback error: {e}")
+                # Silently ignore GUI callback errors to prevent log failures
+                pass
     
     def info(self, message: str):
         """Log info message"""
@@ -74,7 +77,9 @@ class AutomationLogger:
         
         with self.lock:
             self.logger.info(message)
-            self._log_to_gui(formatted_msg)
+        
+        # Call GUI callback outside lock to prevent deadlocks
+        self._log_to_gui(formatted_msg)
     
     def warning(self, message: str):
         """Log warning message"""
@@ -83,7 +88,9 @@ class AutomationLogger:
         
         with self.lock:
             self.logger.warning(message)
-            self._log_to_gui(formatted_msg)
+        
+        # Call GUI callback outside lock to prevent deadlocks
+        self._log_to_gui(formatted_msg)
     
     def error(self, message: str):
         """Log error message"""
@@ -92,7 +99,9 @@ class AutomationLogger:
         
         with self.lock:
             self.logger.error(message)
-            self._log_to_gui(formatted_msg)
+        
+        # Call GUI callback outside lock to prevent deadlocks
+        self._log_to_gui(formatted_msg)
     
     def debug(self, message: str):
         """Log debug message"""
