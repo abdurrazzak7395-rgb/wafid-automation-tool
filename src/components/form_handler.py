@@ -233,7 +233,7 @@ class FormHandler:
                 'passport_number': self.candidate_data.get('passport_number', ''),
                 'passport_issue_date': self.candidate_data.get('passport_issue_date', ''),
                 'passport_issue_place': self.candidate_data.get('passport_issue_place', ''),
-                'passport_expiry': self.candidate_data.get('passport_expiry_date', ''),
+                'passport_expiry_date': self.candidate_data.get('passport_expiry_date', ''),
                 'visa_type': self.candidate_data.get('visa_type', ''),
                 'email': self.candidate_data.get('email_address', ''),
                 'phone': self.candidate_data.get('phone', ''),

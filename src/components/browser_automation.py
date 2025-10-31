@@ -291,7 +291,7 @@ class BrowserAutomation:
             'passport_number': ['passport', 'passport_num', 'passport_no'],
             'passport_issue_date': ['passport.*issue', 'issue.*date'],
             'passport_issue_place': ['passport.*place', 'issue.*place'],
-            'passport_expiry': ['passport.*expir', 'expir.*date'],
+            'passport_expiry_date': ['passport.*expir', 'expir.*date'],
             'visa_type': ['visa', 'visa_type'],
             'email': ['email', 'mail'],
             'phone': ['phone', 'mobile', 'tel'],
@@ -314,7 +314,7 @@ class BrowserAutomation:
             if 'birth' in all_text:
                 return 'date_of_birth'
             elif 'expir' in all_text:
-                return 'passport_expiry'
+                return 'passport_expiry_date'
             elif 'issue' in all_text:
                 return 'passport_issue_date'
         
